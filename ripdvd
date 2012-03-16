@@ -1,0 +1,157 @@
+#!/bin/bash
+# Script Name: ripdvd    http://igurublog.wordpress.com/downloads/script-ripdvd/ 
+# Requires: mplayer libdvdcss2
+# License: GNU GENERAL PUBLIC LICENSE Version 3 http://www.gnu.org/licenses/gpl-3.0.txt
+
+minsize=30  # MB
+
+help ()
+{
+	echo 'ripdvd version 1.0.0'
+	echo 'Copies DVD titles'
+	echo 'Requires: mplayer libdvdcss2'
+	echo 'Usage: ripdvd [OPTIONS] [BASENAME]'
+	echo 'Example: ripdvd                     # Copy all DVD titles to unknowndvd*.vob'
+	echo 'Example: ripdvd /myvideos/StarTrek  # Copy to /myvideos/StarTrek*.vob'
+	echo 'Example: ripdvd --titles 3          # Copy title 3 only'
+	echo 'Example: ripdvd --titles 3-5        # Copy titles 3 thru 5'
+	echo 'Example: ripdvd --titles -3         # Copy first 3 titles'
+	echo 'Example: ripdvd --titles 3-         # Copy titles 3 thru end'
+	echo 'Example: ripdvd --minsize 50        # Delete titles smaller than 50 MB'
+	echo 'Options:'
+	echo '  --titles [STARTNUM]-[ENDNUM]      Copy specified titles only'
+	echo '  --minsize MBSIZE                  Keep titles larger than MBSIZE MB'
+	echo "                                    Use 0 to keep all [default $minsize]"
+	echo
+	echo "Instructions and updates:"
+	echo "http://igurublog.wordpress.com/downloads/script-ripdvd/"
+	echo
+	exit
+}
+
+argsneeded=0
+basedvd=""
+index=0
+while [ "$1" != "" ]
+do
+	if [ "${1:0:1}" = "-" ]; then
+		case "$1" in
+			--help | -help )
+				help
+				;;
+			--titles )
+				if [ "$2" == "" ]; then
+					echo "ripdvd: Option $1 requires argument"
+					exit
+				fi
+				titles="$2"
+				starttitle=${titles%-*}
+				if [ "$starttitle" = "$titles" ]; then
+					endtitle="$titles"
+				else
+					if [ "$starttitle" = "" ]; then
+						starttitle=1
+					fi
+					endtitle=${titles#*-}
+					if [ "$endtitle" = "" ]; then
+						endtitle=99999
+					fi
+				fi
+				if (( endtitle < starttitle )); then
+					xx=$endtitle
+					endtitle=$starttitle
+					starttitle=$xx
+				fi
+				shift
+				;;
+			--minsize )
+				if [ "$2" == "" ]; then
+					echo "ripdvd: Option $1 requires argument"
+					exit
+				fi
+				minsize=$2
+				shift
+				;;
+			* )
+				echo ripdvd: "Unknown option $1"
+				exit
+				;;
+		esac
+	else
+		let "index+=1"
+		case $index in
+			1 )
+				basedvd="$1"
+				;;
+			* )
+				echo "ripdvd: Too many arguments"
+				exit
+				;;
+		esac
+	fi
+	shift
+done
+
+if [ "$starttitle" = "" ] || (( starttitle < 1 )); then
+	starttitle=1
+fi
+if [ "$endtitle" = "" ] || (( endtitle < 1 )); then
+	endtitle=99999
+fi
+
+if [ "$basedvd" = "" ]; then
+	basedvd=`pwd`
+	b=1
+	nametest=`find "$basedvd" -maxdepth 1 -type f -name "unknowndvd$b*"`
+	while [ "$nametest" != "" ]
+	do
+		(( b += 1 ))
+		nametest=`find "$basedvd" -maxdepth 1 -type f -name "unknowndvd$b*"`
+	done
+	basedvd="$basedvd/unknowndvd$b"
+fi
+
+(( ix = starttitle - 1 ))
+tcount=0
+dcount=0
+while (( ix + 1 <= endtitle ))
+do
+	(( ix += 1 ))
+	if (( ix < 10 )); then
+		track="T0$ix"
+	else
+		track="T$ix"
+	fi
+	echo
+	echo "ripdvd: Ripping title $ix to $basedvd-$track.vob..."
+	mplayer dvd://$ix -dumpstream -dumpfile "$basedvd-$track.vob" 2> "$basedvd-ripdvd.tmp"
+	mout=`cat "$basedvd-ripdvd.tmp" 2> /dev/null`
+	rm -f "$basedvd-ripdvd.tmp"
+	mtest=${mout#*Invalid DVD title number}
+	if [ "${mtest:0:2}" == ": " ]; then
+		echo
+		echo "ripdvd: $tcount titles ripped, $dcount discarded."
+		exit
+	else
+		if [ -e "$basedvd-$track.vob" ]; then
+			echo "ripdvd: Ripped $basedvd-$track.vob"
+			(( tcount += 1 ))
+			# big enough?
+			if (( minsize > 0 )); then
+				fsize=$(stat -c%s "$basedvd-$track.vob")
+				if (( fsize < minsize * 1024 * 1024 )); then
+					rm -f "$basedvd-$track.vob"
+					echo "ripdvd: Deleted $basedvd-$track.vob  ($fsize bytes)"
+					(( dcount += 1 ))
+				fi
+			fi
+		else
+			echo "ripdvd: Rip of title $ix FAILED"
+		fi
+	fi
+done
+
+echo
+echo "ripdvd: $tcount titles ripped, $dcount discarded."
+exit
+
