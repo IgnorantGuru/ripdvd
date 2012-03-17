@@ -2,7 +2,8 @@ README for ripdvd
 
 
 OVERVIEW
-    
+========
+
 ripdvd uses mplayer to copy the titles on a DVD to your hard drive or other 
 device. The titles are saved as VOB (MPEG) files which can be played with 
 any video player.
@@ -11,19 +12,25 @@ Homepage & Instructions:
     http://igurublog.wordpress.com/downloads/script-ripdvd/
 
 Downloads:
-    https://github.com/IgnorantGuru/ripdvd
+    https://github.com/IgnorantGuru/ripdvd/tags
     https://github.com/IgnorantGuru/ripdvd/tree/master/packages
 
 Debian/Ubuntu PPA:
     http://igurublog.wordpress.com/downloads/ppa/
     
+Bug Reports:
+    https://github.com/IgnorantGuru/ripdvd/issues
+
 
 INSTALLATION
+============
 
 To install:
 
     wget https://github.com/IgnorantGuru/ripdvd/raw/master/ripdvd
     sudo install ripdvd /usr/local/bin/ripdvd
+
+ripdvd also REQUIRES: mplayer libdvdcss2
 
 To remove:
     
@@ -31,6 +38,7 @@ To remove:
 
 
 LICENSE
+=======
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
