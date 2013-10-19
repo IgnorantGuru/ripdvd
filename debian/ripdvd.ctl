@@ -8,3 +8,4 @@ Copyright: COPYING
 Changelog: changelog
 Readme: README
 Depends: mplayer, libdvdcss2
+Files: ripdvd /usr/bin/
